@@ -77,9 +77,11 @@ class JumpyCommand(sublime_plugin.WindowCommand):
 		if phantoms_left > 1:
 			return
 
-		view, anchor = find_anchor(self.active_views, value)
-		goto(self.window, view, anchor.word)
-		self.stop()
+		target = find_anchor(self.active_views, value)
+		if target != None:
+			(view, anchor) = target
+			goto(self.window, view, anchor.word)
+			self.stop()
 
 
 def abc():
