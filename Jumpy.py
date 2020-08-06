@@ -115,17 +115,14 @@ def xget_words_in_region(view, region):
 
 
 def get_html_for_phantom(label):
-	color = "purple"
-	font_size = 0.7
-
 	return '''
-		<body id="jumpy-phantom">
+		<body id="jumpy">
 		<style>
-			html {
-				background-color: ''' + color + ''';
-				font-size: ''' + str(font_size) + '''rem;
+			#jumpy .label {
+				background-color: purple;
+				font-size: 0.7rem;
 			}
 		</style>
-		''' + label + '''
+		<div class="label">''' + label + '''</div>
 		</body>
 	'''
