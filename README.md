@@ -1,7 +1,7 @@
 # jumpy-sublime
-An equivalent of Atom's Jumpy package, for Sublime Text.
+An equivalent of [Atom's Jumpy package](https://github.com/DavidLGoldberg/jumpy), for Sublime Text.
 
-![Demo of Jumpy](jumpy-in-action.gif)
+![Demo of Jumpy](images/jumpy-in-action.gif)
  
 ## Usage
 Start: `shift`+`enter`.  
