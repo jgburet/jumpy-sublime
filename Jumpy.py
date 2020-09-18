@@ -143,13 +143,15 @@ def goto(window, view, region):
 
 
 def xget_words_in_region(view, region):
-	mask = sublime.CLASS_WORD_START
+	regex = "$|[a-zA-Z_]+|\d+(\.\d+)?"
 
-	cursor = view.find_by_class(region.begin(), True, mask)
+	cursor = region.begin()
 	while cursor < region.end():
-		word = view.expand_by_class(cursor, mask)
+		word = view.find(regex, cursor)
 		yield word
-		cursor = view.find_by_class(word.end() - 1, True, mask)
+
+		cursor = word.end()
+		if word.size() == 0: cursor += 1
 
 
 def get_html_for_phantom(label):
