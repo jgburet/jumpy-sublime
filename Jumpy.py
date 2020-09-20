@@ -143,7 +143,7 @@ def goto(window, view, region):
 
 
 def xget_words_in_region(view, region):
-	regex = "$|[a-zA-Z_]+|\d+(\.\d+)?"
+	regex = "$|\d+(\.\d+)?|\w+"
 
 	cursor = region.begin()
 	while cursor < region.end():
