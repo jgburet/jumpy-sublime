@@ -1,3 +1,5 @@
+[![Package Control](https://img.shields.io/packagecontrol/dt/Jumpy)](https://packagecontrol.io/packages/Jumpy)
+
 # jumpy-sublime
 An equivalent of [Atom's Jumpy package](https://github.com/DavidLGoldberg/jumpy), for Sublime Text.
 
