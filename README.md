@@ -1,7 +1,7 @@
 [![Package Control](https://img.shields.io/packagecontrol/dt/Jumpy)](https://packagecontrol.io/packages/Jumpy)
 
 # jumpy-sublime
-An equivalent of [Atom's Jumpy package](https://github.com/DavidLGoldberg/jumpy), for Sublime Text.
+An equivalent of [Atom's Jumpy package](https://github.com/DavidLGoldberg/jumpy) that creates dynamic hotkeys to jump around files and across visible panes, for Sublime Text.
 
 ![Demo of Jumpy](images/jumpy-in-action.gif)
 
