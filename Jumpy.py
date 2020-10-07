@@ -5,6 +5,14 @@ import sublime
 import sublime_plugin
 
 
+DEFAULT_REGEX = "$|\d+(\.\d+)?|\w+"
+
+DEFAULT_LABEL_CSS = '''
+	background-color: purple;
+	font-size: 0.7rem;
+'''
+
+
 class JumpyCommand(sublime_plugin.WindowCommand):
 	def __init__(self, window):
 		super().__init__(window)
@@ -52,7 +60,7 @@ class JumpyCommand(sublime_plugin.WindowCommand):
 		target = find_anchor(self.active_views, value)
 		if target != None:
 			(view, anchor) = target
-			self.goto(self.window, view, anchor.word)
+			goto(self.window, view, anchor.word)
 
 		self.active_views = None
 
@@ -108,11 +116,12 @@ def get_visible_views(window):
 
 def create_anchors(view, labels):
 	words = xget_words_in_region(view, view.visible_region())
+	label_css = view.settings().get('jumpy.label_css', DEFAULT_LABEL_CSS)
 
 	anchors = {}
 	for word in words:
 		label = labels.__next__()
-		html = get_html_for_phantom(label)
+		html = get_html_for_phantom(label_css, label)
 		phantom = sublime.Phantom(word, html, sublime.LAYOUT_INLINE)
 
 		anchors.update({ label: Anchor(label, phantom, word) })
@@ -143,7 +152,7 @@ def goto(window, view, region):
 
 
 def xget_words_in_region(view, region):
-	regex = "$|\d+(\.\d+)?|\w+"
+	regex = view.settings().get('jumpy.regex', DEFAULT_REGEX)
 
 	cursor = region.begin()
 	while cursor < region.end():
@@ -154,14 +163,11 @@ def xget_words_in_region(view, region):
 		if word.size() == 0: cursor += 1
 
 
-def get_html_for_phantom(label):
+def get_html_for_phantom(label_css, label):
 	return '''
 		<body id="jumpy">
 		<style>
-			#jumpy .label {
-				background-color: purple;
-				font-size: 0.7rem;
-			}
+			#jumpy .label {''' + label_css + '''}
 		</style>
 		<div class="label">''' + label + '''</div>
 		</body>

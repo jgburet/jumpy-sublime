@@ -33,12 +33,25 @@ Go to `Preferences > Key Bindings`. Complete the file with this line:
 ```
 
 ## Customization
-You can customize how labels look like by editing your color scheme:
-```html
-#jumpy .label {
-	<your css>
-}
+Jumpy lets you customize the Regex used to identify where to put labels, as well as their CSS, so you can choose how they look like. Two entries are available for change: `jumpy.label_css` and `jumpy.regex`.  
+Go to `Preferences > Settings` and set them to your preference.  
+
+Jumpy also handles syntax specific configurations (`Preferences > Settings - Syntax Specific`). This means that it can behave differently between two files, even if they are opened & visible in the same window.  
+This comes handy where the Regex used does not suits perfectly your syntax. For example, you might enhance it so `kebab-cased` CSS properties are not identified as several words.  
+
+Example:
+```json
+	"jumpy.label_css": "background-color: color(var(--redish) min-contrast(var(--background) 2.5)); font-size: 0.7rem;",
+	"jumpy.regex": "\\w+",
 ```
+
+Notes:  
+- the regex is escaped.  
+- the whole CSS is overwritten, not just what collides.  
+- it is prefered to use [variables](https://www.sublimetext.com/docs/minihtml.html#variables:ver-dev) so colors can match your color scheme.
+
+A link that might help you:  
+- https://www.sublimetext.com/docs/minihtml.html#css:ver-dev  
 
 ## TODO
 #### Improve labels
