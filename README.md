@@ -28,7 +28,7 @@ Jumpy does not come with predefined bindings so you'll need to define yours.
 Go to `Preferences > Key Bindings`. Complete the file with this line:
 ```json
 [
-    { "keys": ["shift+enter"], "command": "jumpy" }
+    { "keys": ["shift+enter"], "command": "jumpy", "context": [{ "key": "panel_has_focus", "operand": false }] }
 ]
 ```
 
@@ -41,8 +41,8 @@ This comes handy where the Regex used does not suits perfectly your syntax. For 
 
 Example:
 ```json
-	"jumpy.label_css": "background-color: color(var(--redish) min-contrast(var(--background) 2.5)); font-size: 0.7rem;",
-	"jumpy.regex": "\\w+",
+"jumpy.label_css": "background-color: color(var(--redish) min-contrast(var(--background) 2.5)); font-size: 0.7rem;",
+"jumpy.regex": "\\w+",
 ```
 
 Notes:  

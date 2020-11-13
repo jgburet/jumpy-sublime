@@ -2,6 +2,6 @@ Jumpy does not come with predefined bindings so you'll need to define yours.
 Go to `Preferences > Key Bindings`. Complete the file with this line:
 ```json
 [
-    { "keys": ["shift+enter"], "command": "jumpy" }
+	{ "keys": ["shift+enter"], "command": "jumpy", "context": [{ "key": "panel_has_focus", "operand": false }] }
 ]
 ```

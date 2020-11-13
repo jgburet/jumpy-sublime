@@ -8,8 +8,8 @@ This comes handy where the Regex used does not suits perfectly your syntax. For 
 
 Example:
 ```json
-	"jumpy.label_css": "background-color: color(var(--redish) min-contrast(var(--background) 2.5)); font-size: 0.7rem;",
-	"jumpy.regex": "\\w+",
+"jumpy.label_css": "background-color: color(var(--redish) min-contrast(var(--background) 2.5)); font-size: 0.7rem;",
+"jumpy.regex": "\\w+",
 ```
 Note here the regex is escaped.  
 
