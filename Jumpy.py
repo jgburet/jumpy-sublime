@@ -26,7 +26,6 @@ class JumpyCommand(sublime_plugin.WindowCommand):
 
 
 	def start(self):
-		self.is_running = True
 		labels = xget_labels()
 
 		self.active_views = []
@@ -36,6 +35,8 @@ class JumpyCommand(sublime_plugin.WindowCommand):
 
 			self.active_views.append(ActiveView(anchors, None, phantom_set, view))
 
+		# Set only once setup succeeded, so a failure does not leave the next keypress toggling stop().
+		self.is_running = True
 		self.window.show_input_panel("", "", self._on_sent, self._on_changed, self._on_closed)
 
 
@@ -110,7 +111,9 @@ def get_visible_views(window):
 	views = []
 	for group_id in range(window.num_groups()):
 		view = window.active_view_in_group(group_id)
-		views.append(view)
+		# Empty groups have no active view.
+		if view is not None:
+			views.append(view)
 	return views
 
 
