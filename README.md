@@ -1,65 +1,67 @@
 [![Package Control](https://img.shields.io/packagecontrol/dt/Jumpy)](https://packagecontrol.io/packages/Jumpy)
 
-# jumpy-sublime
-An equivalent of [Atom's Jumpy package](https://github.com/DavidLGoldberg/jumpy) that creates dynamic hotkeys to jump around files and across visible panes, for Sublime Text.
+# Jumpy
+Jump to any word of any visible view in Sublime Text by typing a short label.
 
 ![Demo of Jumpy](images/jumpy-in-action.gif)
 
+## Usage
+1. Press your key binding (see [Key binding](#key-binding)): a label appears on every word, number and line end of the visible views.
+2. Type a label: the cursor moves to its target. Labels that no longer match are hidden as you type.
+3. Press `escape`, or type a letter that matches no label, to cancel.
+
 ## Installation
+**Package Control**: open the Command Palette (`ctrl+shift+p`, or `cmd+shift+p` on Mac), select `Package Control: Install Package`, then `Jumpy`.
 
-### Step 1: download package
-#### Option 1: using Package Control
-Open the Command Palette:  
-- on PC: `shift+control+P`  
-- on Mac: `shift+command+P`  
-
-Select `Package Control: Install Package`.  
-
-Select `Jumpy`.
-
-#### Option 2: using GIT
+**Manually**: clone this repository into the folder opened by `Preferences: Browse Packages` from the Command Palette, under the name `Jumpy`:
 ```bash
-git clone "https://github.com/jgburet/jumpy-sublime.git" \
-	"~/Library/Application Support/Sublime Text 3/Packages/Jumpy" # <-- MacOS destination
+git clone https://github.com/jgburet/jumpy-sublime.git Jumpy
 ```
 
-### Step 2: configure bindings
-Jumpy does not come with predefined bindings so you'll need to define yours.  
-Go to `Preferences > Key Bindings`. Complete the file with this line:
+## Key binding
+Jumpy comes without a key binding: it does nothing until you add one.  
+Run `Preferences: Key Bindings` from the Command Palette and add this entry to the list in the right-hand file:
 ```json
-[
-    { "keys": ["shift+enter"], "command": "jumpy", "context": [{ "key": "panel_has_focus", "operand": false }] }
-]
+{ "keys": ["shift+enter"], "command": "jumpy", "context": [{ "key": "panel_has_focus", "operand": false }] },
 ```
 
-## Customization
-Jumpy lets you customize the Regex used to identify where to put labels, as well as their CSS, so you can choose how they look like. Two entries are available for change: `jumpy.label_css` and `jumpy.regex`.  
-Go to `Preferences > Settings` and set them to your preference.  
+## Settings
+Run `Preferences: Jumpy Settings` from the Command Palette, or use the menu `Package Settings > Jumpy > Settings` (under `Sublime Text > Settings` on Mac, `Preferences` elsewhere).  
+Settings can also be set in `Preferences: Settings`, or per syntax in `Preferences: Settings - Syntax Specific`, which takes precedence.
 
-Jumpy also handles syntax specific configurations (`Preferences > Settings - Syntax Specific`). This means that it can behave differently between two files, even if they are opened & visible in the same window.  
-This comes handy where the Regex used does not suits perfectly your syntax. For example, you might enhance it so `kebab-cased` CSS properties are not identified as several words.  
+| Setting | Default | Description |
+|---|---|---|
+| `jumpy.mode` | `"phantom"` | How labels are displayed: `"phantom"` or `"edit"` (see [Display modes](#display-modes)). |
+| `jumpy.regex` | `"$\|\\d+(\\.\\d+)?\|\\w+"` | Where labels are placed. Backslashes must be escaped, as in any JSON string. |
+| `jumpy.selector` | none | Only keep the matches of `jumpy.regex` whose start matches this [scope selector](https://www.sublimetext.com/docs/selectors.html), e.g. `"source - comment - string"`. |
+| `jumpy.label_color` | color scheme's purple | Background color of the labels, in any CSS format, e.g. `"#957FB8"` or `"purple"`. Shared by every view: syntax specific values are ignored. |
+| `jumpy.label_css` | `"font-size: 0.7rem;"` | Additional [CSS](https://www.sublimetext.com/docs/minihtml.html#css) of the labels in `phantom` mode. A `background-color` here overrides `jumpy.label_color`. Prefer [color scheme variables](https://www.sublimetext.com/docs/minihtml.html#variables) so labels match your theme. |
 
-Example:
+Syntax specific settings let Jumpy behave differently in two files visible side by side. For example, to treat `kebab-cased` CSS properties as single words, open a CSS file, run `Preferences: Settings - Syntax Specific` and set:
 ```json
-"jumpy.label_css": "background-color: color(var(--redish) min-contrast(var(--background) 2.5)); font-size: 0.7rem;",
-"jumpy.regex": "\\w+",
+{
+	"jumpy.regex": "$|[\\w-]+",
+}
 ```
 
-Notes:  
-- the regex is escaped.  
-- the whole CSS is overwritten, not just what collides.  
-- it is prefered to use [variables](https://www.sublimetext.com/docs/minihtml.html#variables:ver-dev) so colors can match your color scheme.
+### Display modes
+- `phantom` (default): labels are drawn next to their target. The file is never edited, but the text shifts while labels are displayed.
+- `edit`: labels are written over the beginning of their target, so the text does not move. The file is restored as soon as you jump or cancel, without touching its undo history or unsaved state. Its redo history is lost, though (see [Edit mode details](#edit-mode-details)).
 
-A link that might help you:  
-- https://www.sublimetext.com/docs/minihtml.html#css:ver-dev  
+## Edit mode details
+**Labels.** They are 2 characters long, 3 when there are more than 676 targets; the most cramped targets get the 2-character ones. Labels only overwrite characters up to the next target, tab or end of line. A target followed by less than 2 free characters (e.g. `x` in `x\ty`) shifts the text by one character.
 
-## TODO
-#### Improve labels
-Right now, labels are displayed using `phantoms`. When displayed, they shift your text. It's annoying.  
-I'd prefer to edit the `buffer` but this complexifies A LOT how the package works, having to orchestrate more commands.  
-Also, there's that to deal with https://github.com/sublimehq/sublime_text/issues/817#issuecomment-95211154.
+**Colors.** Sublime only colors text through color schemes. When `jumpy.label_color` is set, Jumpy adds a rule for its `jumpy.label` scope to each color scheme you use, through files in `Packages/User/Jumpy/` that Sublime merges with them. Your color schemes and their customizations are left untouched, and these files are emptied when the setting is unset. Labels displayed right after switching to a new color scheme may not be colored yet.
 
-#### Multi cursors
-Keep current cursors and add new one on selected label. 
+**Interactions.**
+- Focusing a view (e.g. clicking in it) cancels the jump, so a file holding labels cannot be edited.
+- Other plugins (linters, LSP) see the temporary edit.
+- Labels are removed before the file is saved or closed.
+- Labels are removed with an undo, which replaces the file's redo history: a redo right after a jump or cancel writes the labels back, and Jumpy no longer removes them. Undo them manually.
+- If something else modifies the file while labels are displayed (e.g. a reload from disk), Jumpy does not restore it and shows an error dialog: undo the labels manually.
 
-#### Select text between cursor and label
+## Uninstall
+Remove the package, then delete `Packages/User/Jumpy/` **while Sublime Text is closed**. Jumpy cannot remove this folder itself: Sublime fails to reload a color scheme whose merged file disappears while it runs. The folder only exists if `jumpy.label_color` was set in edit mode.
+
+## Credits
+Inspired by [Jumpy for Atom](https://github.com/DavidLGoldberg/jumpy).

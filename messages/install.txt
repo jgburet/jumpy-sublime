@@ -1,7 +1,9 @@
-Jumpy does not come with predefined bindings so you'll need to define yours.  
-Go to `Preferences > Key Bindings`. Complete the file with this line:
-```json
-[
-	{ "keys": ["shift+enter"], "command": "jumpy", "context": [{ "key": "panel_has_focus", "operand": false }] }
-]
-```
+Jumpy comes without a key binding: it does nothing until you add one.
+Run `Preferences: Key Bindings` from the Command Palette and add this entry to the
+list in the right-hand file:
+
+    { "keys": ["shift+enter"], "command": "jumpy", "context": [{ "key": "panel_has_focus", "operand": false }] },
+
+Settings: run `Preferences: Jumpy Settings` from the Command Palette.
+
+Documentation: https://github.com/jgburet/jumpy-sublime

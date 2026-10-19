@@ -1,0 +1,21 @@
+{
+	// These settings can also be set in Preferences and in syntax specific settings,
+	// which take precedence over this file.
+	// How labels are displayed:
+	// - "phantom": next to their target, without editing the buffer, but the text shifts.
+	// - "edit": written over their target, so the text does not move. The buffer is
+	//   restored with an undo once a label is selected or the selection is cancelled.
+	//   The redo history is lost, and a redo right after a jump writes the labels back.
+	"jumpy.mode": "phantom",
+	// Where labels are placed.
+	"jumpy.regex": "$|\\d+(\\.\\d+)?|\\w+",
+	// Only keep the matches of jumpy.regex whose start matches this scope selector,
+	// e.g. "source - comment - string". Empty keeps them all.
+	"jumpy.selector": "",
+	// Background color of the labels, in any CSS format, e.g. "#957FB8".
+	// Empty uses the purple of the color scheme.
+	// Not applied by syntax specific settings: it is shared by every view.
+	"jumpy.label_color": "",
+	// Additional CSS of the labels in "phantom" mode.
+	"jumpy.label_css": "font-size: 0.7rem;",
+}
