@@ -10,6 +10,8 @@ Jump to any word of any visible view in Sublime Text by typing a short label.
 2. Type a label: the cursor moves to its target. Labels that no longer match are hidden as you type.
 3. Press `escape`, or type a letter that matches no label, to cancel.
 
+Instead of moving the cursor, Jumpy can also add a cursor or extend the selection to the label (see [Actions](#actions)).
+
 ## Installation
 **Package Control**: open the Command Palette (`ctrl+shift+p`, or `cmd+shift+p` on Mac), select `Package Control: Install Package`, then `Jumpy`.
 
@@ -24,6 +26,30 @@ Run `Preferences: Key Bindings` from the Command Palette and add this entry to t
 ```json
 { "keys": ["shift+enter"], "command": "jumpy", "context": [{ "key": "panel_has_focus", "operand": false }] },
 ```
+
+### Actions
+The `action` argument sets what happens once a label is typed. Bind each one you use to its own keys, e.g.:
+```json
+{ "keys": ["shift+enter"], "command": "jumpy", "context": [{ "key": "panel_has_focus", "operand": false }] },
+{ "keys": ["alt+enter"], "command": "jumpy", "args": { "action": "add_cursor" }, "context": [{ "key": "panel_has_focus", "operand": false }] },
+{ "keys": ["alt+shift+enter"], "command": "jumpy", "args": { "action": "select" }, "context": [{ "key": "panel_has_focus", "operand": false }] },
+```
+
+| Action | Effect |
+|---|---|
+| `"jump"` (default) | Replaces the selection with a cursor at the label. |
+| `"add_cursor"` | Adds a cursor at the label, keeping the existing cursors and selections. |
+| `"select"` | Selects from a cursor to the label, as `shift+click` does, and keeps the other cursors and selections. Labels are only shown in the active view. |
+
+The label stands for the start of its target, so selecting forward stops before the target word and selecting backward includes it.  
+With `"jump"` and `"add_cursor"`, a label in another view uses that view's own cursors.
+
+**Which cursor `"select"` starts from.** Sublime does not tell which cursor is the most recent, so Jumpy compares the cursors with the ones left by its last action in the view:
+- if exactly one cursor or selection was added since (e.g. with `cmd+click` or a double-click), the selection starts from it;
+- if none was added, it extends the region Jumpy placed last, so consecutive selections extend the same region;
+- if several were added, nothing happens: the selection would be ambiguous.
+
+Cursors are compared by position: after typing or moving several cursors, they all count as added. Press `escape` to get back to a single cursor.
 
 ## Settings
 Run `Preferences: Jumpy Settings` from the Command Palette, or use the menu `Package Settings > Jumpy > Settings` (under `Sublime Text > Settings` on Mac, `Preferences` elsewhere).  
@@ -47,6 +73,8 @@ Syntax specific settings let Jumpy behave differently in two files visible side 
 ### Display modes
 - `phantom` (default): labels are drawn next to their target. The file is never edited, but the text shifts while labels are displayed.
 - `edit`: labels are written over the beginning of their target, so the text does not move. The file is restored as soon as you jump or cancel, without touching its undo history or unsaved state. Its redo history is lost, though (see [Edit mode details](#edit-mode-details)).
+
+A file open in several views gets the same labels in each of them, and a single mode applies to all of them: the active view's when it shows the file, otherwise the one of the view in the first group. A label visible in several views moves the cursor in the active one.
 
 ## Edit mode details
 **Labels.** They are 2 characters long, 3 when there are more than 676 targets; the most cramped targets get the 2-character ones. Labels only overwrite characters up to the next target, tab or end of line. A target followed by less than 2 free characters (e.g. `x` in `x\ty`) shifts the text by one character.

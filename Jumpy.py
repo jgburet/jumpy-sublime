@@ -10,6 +10,10 @@ import sublime_plugin
 MODE_PHANTOM = "phantom"
 MODE_EDIT = "edit"
 
+ACTION_JUMP = "jump"
+ACTION_ADD_CURSOR = "add_cursor"
+ACTION_SELECT = "select"
+
 REGIONS_KEY = "jumpy"
 
 # Color used when jumpy.label_color is not set, as named by the color scheme.
@@ -27,6 +31,10 @@ labelled_buffers = {}
 # Running commands keyed by window id, so focusing a view can end them.
 sessions = {}
 
+# Per view id, the selection right after Jumpy's last action in the view, as a set of
+# (a, b) pairs, and the point it placed, to find the region a selection starts from.
+placements = {}
+
 
 class JumpyCommand(sublime_plugin.WindowCommand):
 	def __init__(self, window):
@@ -34,29 +42,43 @@ class JumpyCommand(sublime_plugin.WindowCommand):
 
 		self.anchors = None
 		self.renderers = None
+		self.action = None
+		self.selections = None
+		self.origin = None
 
 
-	def run(self):
+	def run(self, action=ACTION_JUMP):
 		if self.anchors is not None: self.stop()
-		else: self.start()
+		else: self.start(action)
 
 
-	def start(self):
-		phantom_views = []
-		edited_views_by_buffer = {}
-		for view in get_visible_views(self.window):
-			if get_mode(view) == MODE_EDIT:
-				edited_views_by_buffer.setdefault(view.buffer_id(), []).append(view)
-			else:
-				phantom_views.append(view)
+	def start(self, action):
+		if action not in (ACTION_JUMP, ACTION_ADD_CURSOR, ACTION_SELECT):
+			print('Jumpy: unknown action "{}", falling back to "{}"'.format(action, ACTION_JUMP))
+			action = ACTION_JUMP
 
-		# Clones share their buffer: it is edited once, with the targets visible in any of them.
+		active_view = self.window.active_view()
+		views = get_visible_views(self.window)
+		origin = None
+		if action == ACTION_SELECT:
+			# A selection cannot span views: only the active one gets labels.
+			views = [view for view in views if view == active_view]
+			origin = find_selection_origin(active_view) if views else None
+			if origin is None:
+				sublime.status_message('Jumpy: no single new cursor to select from')
+				return
+
+		clones_by_buffer = {}
+		# A target visible in several clones jumps to the first one: the active view
+		# comes first so that the cursor stays in it.
+		for view in sorted(views, key=lambda view: view != active_view):
+			clones_by_buffer.setdefault(view.buffer_id(), []).append(view)
+
+		# Clones get the same labels whatever the mode, as a buffer can hold only one
+		# label per target in edit mode.
 		targets_by_renderer = [
-			(PhantomLabels(view), [(view, target) for target in find_targets(view)])
-			for view in phantom_views
-		] + [
-			(BufferLabels(views[0]), find_buffer_targets(views))
-			for views in edited_views_by_buffer.values()
+			(create_renderer(clones), find_buffer_targets(clones))
+			for clones in clones_by_buffer.values()
 		]
 
 		anchors = create_anchors(targets_by_renderer)
@@ -64,11 +86,13 @@ class JumpyCommand(sublime_plugin.WindowCommand):
 			sublime.status_message('Jumpy: nothing to jump to')
 			return
 
-		if edited_views_by_buffer:
-			sync_label_color([clone for views in edited_views_by_buffer.values() for clone in get_clones(views[0])])
-
 		self.anchors = anchors
 		self.renderers = [renderer for (renderer, targets) in targets_by_renderer]
+		self.action = action
+		self.origin = origin
+		# Taken before labels are written: removing them with an undo restores the
+		# selection of the view they were written in, but not the one of its clones.
+		self.selections = {view.id(): list(view.sel()) for view in views}
 		self.refresh("")
 
 		sessions[self.window.id()] = self
@@ -83,6 +107,9 @@ class JumpyCommand(sublime_plugin.WindowCommand):
 			renderer.clear()
 		self.anchors = None
 		self.renderers = None
+		self.action = None
+		self.selections = None
+		self.origin = None
 		sessions.pop(self.window.id(), None)
 
 		if self.window.active_panel() == 'input':
@@ -98,9 +125,12 @@ class JumpyCommand(sublime_plugin.WindowCommand):
 
 
 	def jump(self, anchor):
+		action = self.action
+		selection = self.selections[anchor.view.id()]
+		origin = self.origin
 		# Labels must be removed first: in edit mode they may have shifted the target.
 		self.stop()
-		goto(self.window, anchor.view, anchor.target)
+		goto(self.window, anchor.view, anchor.target.begin(), action, selection, origin)
 
 
 	def _on_sent(self, value):
@@ -163,6 +193,7 @@ class JumpyRestoreEventListener(sublime_plugin.EventListener):
 
 	def on_pre_close(self, view):
 		restore_buffer(view)
+		placements.pop(view.id(), None)
 
 
 	def on_activated(self, view):
@@ -276,6 +307,16 @@ def get_mode(view):
 	return mode
 
 
+def create_renderer(clones):
+	"""
+	The mode of the first clone applies to all of them: labels written in the buffer
+	would also show in the clones displaying phantoms.
+	"""
+
+	if get_mode(clones[0]) == MODE_EDIT: return BufferLabels(clones[0])
+	return PhantomLabels(clones[0])
+
+
 def get_visible_views(window):
 	# A group without tabs may still return a placeholder view that window.views() does
 	# not list: labelling it would turn it into a new tab.
@@ -312,10 +353,10 @@ def find_targets(view):
 def find_buffer_targets(views):
 	"""
 	Targets visible in any of the views, which show the same buffer, each paired with
-	the first view showing it.
+	the first of the views showing it.
 	Overlapping visible regions may yield the same target twice, or a target starting
-	inside another one when a view starts in the middle of a word: labels written over
-	overlapping targets would corrupt the buffer, so only the first one is kept.
+	inside another one when a view starts in the middle of a word: only the first one is
+	kept, as labels written over overlapping targets would corrupt the buffer.
 	"""
 
 	targets = sorted(
@@ -406,10 +447,44 @@ def make_labels(count, alphabet):
 	return labels[:count]
 
 
-def goto(window, view, region):
+def find_selection_origin(view):
+	"""
+	Region a selection starts from: the only region added since Jumpy's last action in
+	the view, or else the region whose end Jumpy placed, so that consecutive selections
+	extend the same region. None when several regions were added, or when none was and
+	that region is gone (e.g. dropped by escape).
+	Sublime keeps selections sorted by position, not by creation order: comparing them
+	with the previous one is the only way to tell which is new. Regions are compared by
+	position, so typing or moving the cursors makes them all new.
+	"""
+
+	(previous, point) = placements.get(view.id(), (set(), None))
+	regions = list(view.sel())
+
+	added = [region for region in regions if (region.a, region.b) not in previous]
+	if len(added) == 1: return added[0]
+	if added: return None
+	return next((region for region in regions if region.b == point), None)
+
+
+def goto(window, view, point, action, selection, origin):
+	"""
+	`selection` is the view's selection when the labels were displayed, and `origin`
+	the region of it a selection starts from.
+	"""
+
+	regions = list(selection)
+	if action == ACTION_ADD_CURSOR:
+		regions.append(sublime.Region(point))
+	elif action == ACTION_SELECT:
+		regions[regions.index(origin)] = sublime.Region(origin.a, point)
+	else:
+		regions = [sublime.Region(point)]
+
 	window.focus_view(view)
 	view.sel().clear()
-	view.sel().add(region.begin())
+	view.sel().add_all(regions)
+	placements[view.id()] = (set((region.a, region.b) for region in view.sel()), point)
 
 
 def get_html_for_phantom(label_css, label):
@@ -424,6 +499,11 @@ def get_html_for_phantom(label_css, label):
 
 
 class PhantomLabels:
+	"""
+	Phantoms belong to the buffer and show in all of its clones: a single phantom set
+	draws the labels of the targets visible in any of them.
+	"""
+
 	def __init__(self, view):
 		self.view = view
 		self.phantom_set = sublime.PhantomSet(view, REGIONS_KEY)
@@ -457,6 +537,7 @@ class BufferLabels:
 	def __init__(self, view):
 		self.view = view
 		self.label_scope = get_label_scope()
+		sync_label_color(get_clones(view))
 		# Change count right after the labels were written, None when the buffer holds no labels.
 		self.change_count = None
 		# Views the label regions were drawn in.
