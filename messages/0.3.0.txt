@@ -1,0 +1,58 @@
+Jumpy 0.3.0
+===========
+
+New display mode: "edit"
+------------------------
+Labels can now be written over the beginning of their target, so the text no
+longer shifts while they are displayed. The file is restored as soon as you jump or
+cancel, without touching its undo history or unsaved state. Its redo history is
+lost, though: a redo right after a jump writes the labels back, and they must then
+be undone manually.
+
+The default is unchanged (labels drawn next to their target). To opt in, set:
+
+    "jumpy.mode": "edit",
+
+`jumpy.label_css` only applies to "phantom" mode. If you customized it, set
+`jumpy.label_color` to keep your label color in "edit" mode.
+
+Add a cursor, or select up to a label
+-------------------------------------
+The `jumpy` command takes an `action` argument, to bind to its own keys:
+- "jump" (default): moves the cursor to the label, as before.
+- "add_cursor": adds a cursor at the label, keeping the existing ones.
+- "select": selects from a cursor to the label, as shift+click does, keeping the
+  other cursors. It starts from the only cursor added since Jumpy's last action,
+  or else extends the region Jumpy placed last. With several new cursors, nothing
+  happens.
+
+For example, in `Preferences: Key Bindings`:
+
+    { "keys": ["alt+enter"], "command": "jumpy", "args": { "action": "add_cursor" }, "context": [{ "key": "panel_has_focus", "operand": false }] },
+    { "keys": ["alt+shift+enter"], "command": "jumpy", "args": { "action": "select" }, "context": [{ "key": "panel_has_focus", "operand": false }] },
+
+Files open in several views
+---------------------------
+A file open in several views now gets the same labels in each of them, and a
+label visible in the active view keeps the cursor there.
+
+New settings
+------------
+- `jumpy.mode`: "phantom" (default) or "edit".
+- `jumpy.selector`: only place labels on targets matching a scope selector,
+  e.g. "source - comment - string".
+- `jumpy.label_color`: background color of the labels, in any CSS format,
+  e.g. "#957FB8" or "purple". Defaults to the "purplish" of your color scheme.
+
+Settings menu
+-------------
+Settings are documented in the package's settings file, opened by running
+`Preferences: Jumpy Settings` from the Command Palette, or from the menu
+`Package Settings > Jumpy > Settings`.
+
+Uninstalling
+------------
+In "edit" mode, setting `jumpy.label_color` creates `Packages/User/Jumpy/`. It is
+not removed when uninstalling Jumpy: delete it while Sublime Text is closed.
+
+More details: https://github.com/jgburet/jumpy-sublime
